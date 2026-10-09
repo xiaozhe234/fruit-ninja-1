@@ -1,0 +1,297 @@
+/* =========================================================================
+ * style.css —— 全部 DOM UI 样式（菜单 / 弹窗 / 竖屏提示）
+ * 【合并单文件】把本文件内容整体复制进 index.html 的 <style> 标签即可。
+ * ========================================================================= */
+
+/* ---------- 基础重置：全屏、禁止滚动 / 选中 / 长按菜单 ---------- */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;                 /* 禁止页面下拉滚动 */
+  overscroll-behavior: none;        /* 禁止下拉刷新（部分安卓浏览器） */
+  background: #1b0f08;
+  font-family: "Microsoft YaHei", "PingFang SC", "Heiti SC", sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  position: fixed;
+  touch-action: manipulation;       /* 禁用浏览器双击缩放手势 */
+}
+
+/* ---------- 游戏画布：铺满窗口，触摸不触发浏览器默认行为 ---------- */
+#gameCanvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+  touch-action: none;               /* 触摸事件全部交给游戏，阻止浏览器滚动手势 */
+  cursor: crosshair;
+  background: #2a170b;
+}
+
+/* ---------- UI 层：本身不拦截事件，菜单/弹窗再单独开启 ---------- */
+#uiLayer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.screen, .modal { pointer-events: auto; }
+
+.hidden { display: none !important; }
+.hint {
+  font-size: 13px;
+  color: #d8b78e;
+  line-height: 1.7;
+  text-align: center;
+}
+
+/* ---------- 主菜单 ---------- */
+#menuScreen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: radial-gradient(ellipse at center, rgba(35, 18, 8, 0.55) 0%, rgba(20, 10, 4, 0.85) 100%);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.game-title {
+  font-size: clamp(38px, 8vw, 64px);
+  font-weight: 900;
+  letter-spacing: 8px;
+  color: #ffe9c2;
+  text-shadow: 0 0 18px rgba(255, 170, 60, 0.85), 0 4px 10px rgba(0, 0, 0, 0.6);
+}
+
+.game-sub {
+  color: #e8c185;
+  font-size: 13px;
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+}
+
+.menu-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(320px, 82vw);
+}
+
+.menu-row { display: flex; gap: 10px; }
+
+.menu-foot {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #a5835e;
+  letter-spacing: 1px;
+}
+
+/* ---------- 按钮 ---------- */
+.btn {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, #8d6b4a, #6b4d31);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: transform 0.06s ease, filter 0.15s ease;
+  touch-action: manipulation;
+}
+.btn:active { transform: scale(0.96); filter: brightness(1.15); }
+
+.btn-big    { padding: 13px 18px; font-size: 17px; letter-spacing: 4px; }
+.btn-primary{ background: linear-gradient(180deg, #ffb347, #ff7b2d); }
+.btn-warn   { background: linear-gradient(180deg, #ff8a5c, #e64530); }
+.btn-half   { flex: 1; }
+.btn-block  { width: 100%; }
+
+/* 联机按钮不可用态（本地直接打开静态 html 时置灰） */
+.btn.disabled,
+.btn:disabled {
+  filter: grayscale(0.9) brightness(0.7);
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
+/* ---------- 弹窗（互斥，见 js/ui.js） ---------- */
+#modalWrap {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 5, 2, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.modal {
+  width: min(430px, 88vw);
+  max-height: 84vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #3a2212, #2a170b);
+  border: 2px solid rgba(255, 190, 110, 0.4);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+  animation: modalIn 0.18s ease-out;
+}
+
+@keyframes modalIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.modal-header {
+  padding: 13px;
+  text-align: center;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 5px;
+  color: #ffe9c2;
+  background: rgba(255, 160, 60, 0.14);
+  border-bottom: 1px solid rgba(255, 190, 110, 0.25);
+}
+
+.modal-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  color: #e9d4b4;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  padding: 12px 16px 16px;
+}
+
+/* ---------- 设置表单 ---------- */
+.form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.form-row label { font-size: 15px; color: #ffe9c2; }
+.form-row select {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid #a5835e;
+  background: #241408;
+  color: #ffe9c2;
+  font-size: 14px;
+  outline: none;
+}
+
+/* ---------- 说明弹窗 ---------- */
+.help-body h3 { color: #ffc46b; font-size: 15px; margin: 10px 0 4px; }
+.help-body p  { margin-bottom: 6px; }
+.tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #241408;
+  font-weight: 700;
+}
+.tag-double { background: #ffd54a; }
+.tag-slow   { background: #4dd0e1; }
+.tag-storm  { background: #ba68c8; }
+
+/* ---------- 联机弹窗 ---------- */
+#roomCodeBox {
+  margin: 12px 0;
+  text-align: center;
+  font-size: 16px;
+  color: #ffe9c2;
+}
+#roomCodeText {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: #ffd54a;
+  text-shadow: 0 0 10px rgba(255, 213, 74, 0.6);
+}
+.join-row { display: flex; gap: 8px; margin-top: 12px; }
+.join-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #a5835e;
+  background: #241408;
+  color: #ffe9c2;
+  font-size: 18px;
+  letter-spacing: 6px;
+  text-align: center;
+  outline: none;
+}
+#netStatus { margin-top: 10px; min-height: 18px; }
+
+/* ---------- 结算内容 ---------- */
+.result-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+}
+.result-title.win  { color: #7bed9f; text-shadow: 0 0 12px rgba(123, 237, 159, 0.6); }
+.result-title.lose { color: #ff7b72; text-shadow: 0 0 12px rgba(255, 123, 114, 0.6); }
+.result-title.draw { color: #ffd54a; text-shadow: 0 0 12px rgba(255, 213, 74, 0.6); }
+
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 4px;
+  border-bottom: 1px dashed rgba(255, 190, 110, 0.25);
+  font-size: 16px;
+}
+.score-row b { color: #ffd54a; }
+.new-record {
+  text-align: center;
+  margin-top: 10px;
+  color: #7bed9f;
+  font-weight: 800;
+  letter-spacing: 2px;
+  animation: blink 1s infinite alternate;
+}
+@keyframes blink { from { opacity: 0.5; } to { opacity: 1; } }
+
+/* ---------- 竖屏禁止提示（层级最高） ---------- */
+#rotateOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(12, 6, 2, 0.96);
+  color: #ffe9c2;
+  text-align: center;
+}
+#rotateOverlay h2 { letter-spacing: 4px; }
+#rotateOverlay p  { color: #c9a273; line-height: 1.8; }
+.rotate-icon {
+  font-size: 64px;
+  animation: rotateHint 1.6s ease-in-out infinite;
+}
+@keyframes rotateHint {
+  0%, 20%   { transform: rotate(0deg); }
+  60%, 100% { transform: rotate(90deg); }
+}

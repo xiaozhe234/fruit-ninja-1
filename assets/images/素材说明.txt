@@ -1,0 +1,17 @@
+图片素材目录（全部可选，缺失时游戏自动用 Canvas 色块绘制代替，不会报错）
+
+可放文件：
+  background.jpg      木纹背景
+  watermelon.png      西瓜
+  apple.png           苹果
+  orange.png          橙子
+  banana.png          香蕉
+  peach.png           桃子
+  watermelon_half.png 等 *_half.png   两半切割碎片
+  bomb.png            炸弹
+  heart.png           爱心图标
+
+免费商用来源：
+  · pixabay.com      搜索 fruit png / wood texture background
+  · itch.io          搜索 free fruit ninja assets / 2D fruit sprite pack
+  · 爱给网 aigei.com  开源游戏素材频道

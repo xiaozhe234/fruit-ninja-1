@@ -1,0 +1,15 @@
+音效素材目录
+
+本目录已内置 5 个免费音效（Mixkit Free Sound Effects，Mixkit License：个人/商用均可、无需署名）：
+  slice.mp3         切水果音效        = Mixkit "Sword slash swoosh" (id 1476)
+  combo.mp3         连击音效          = Mixkit "Winning chimes"    (id 2015)
+  bomb_explode.mp3  炸弹爆炸          = Mixkit "Arcade game explosion" (id 1699)
+  game_over.mp3     游戏结束          = Mixkit "Arcade game over"  (id 3068)
+  bonus.mp3         吃到增益香蕉      = Mixkit "Bonus earned in video game" (id 2058)
+
+如需更换/补充音效，直接把同名 mp3 覆盖本目录即可；删除文件后游戏自动静音降级（不会报错）。
+
+下载来源（免费商用）：
+  · mixkit.co/free-sound-effects   免登录、直链下载，Mixkit License（无需署名）
+  · freesound.org                  需登录，优先选择 CC0 / CC-BY 许可
+  · pixabay.com/sound-effects      免登录，Pixabay Content License

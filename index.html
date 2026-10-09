@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<!-- 移动端 viewport：禁止缩放 / 禁止双击放大 / 禁止页面下拉滚动（配合 js/main.js 的 touch preventDefault） -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%89%3C/text%3E%3C/svg%3E">
+<title>水果忍者 · HTML5 Canvas</title>
+<!--
+============================================================================
+【如何把整个项目合并成单个 index.html 直接双击打开运行】
+1. 把 css/style.css 的全部内容复制到本文件 <head> 内的 <style>...</style> 标签中，
+   并删除下面的 <link rel="stylesheet" href="./css/style.css">。
+2. 按本文件底部 <script src="./js/..."> 的引入顺序（config → utils → pool → audio
+   → assets → blade → fx → entities → input → game → net → ui → main），
+   把 js/ 目录下对应文件的内容依次拼接进一个 <script>...</script> 标签内。
+   （所有模块均挂载在 window.FN 命名空间下，普通脚本、无 ES Module 依赖，顺序拼接即可。）
+3. 删除 socket.io 的 CDN <script> 标签与所有 ./js 引用即可。
+   无网络时联机按钮会自动置灰，单机全部功能不受影响。
+4. 图片 / 音频素材本身就支持"缺失降级"（Canvas 色块绘制代替水果、静音代替音效），
+   合并后的单文件不需要任何外部资源也能完整游玩，不会报错崩溃。
+============================================================================
+-->
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- ======================= 音效：HTML Audio 标签（不使用 base64 内嵌） =======================
+     素材缺失时自动静音降级，不阻断游戏。
+     preload="none"：页面加载不发起请求，避免缺失素材在控制台刷 404；
+     首次播放时一次性探测，确认缺失后自动清除并静默跳过（见 js/audio.js）。
+     mp3 请自行到 Freesound.org 下载并放到 assets/audio/ 目录（搜索关键词见 README.md）：
+       slice.mp3 切水果   combo.mp3 连击      bomb_explode.mp3 炸弹爆炸
+       game_over.mp3 结束  bonus.mp3 增益香蕉
+=============================================================================================== -->
+<audio id="sfx-slice" src="assets/audio/slice.mp3" preload="none"></audio>
+<audio id="sfx-combo" src="assets/audio/combo.mp3" preload="none"></audio>
+<audio id="sfx-bomb" src="assets/audio/bomb_explode.mp3" preload="none"></audio>
+<audio id="sfx-over" src="assets/audio/game_over.mp3" preload="none"></audio>
+<audio id="sfx-bonus" src="assets/audio/bonus.mp3" preload="none"></audio>
+
+<!-- 游戏画布：跟随窗口 resize 自适应（js/game.js 中处理 devicePixelRatio） -->
+<canvas id="gameCanvas"></canvas>
+
+<!-- ============================ DOM UI 层（菜单 + 互斥弹窗） ============================ -->
+<div id="uiLayer">
+
+  <!-- 主菜单 -->
+  <div id="menuScreen" class="screen">
+    <h1 class="game-title">水果忍者</h1>
+    <p class="game-sub">HTML5 Canvas · 原生 JavaScript</p>
+    <div class="menu-btns">
+      <button id="btnClassic" class="btn btn-big btn-primary">经典模式</button>
+      <button id="btnArcade"  class="btn btn-big btn-primary">街机模式</button>
+      <button id="btnZen"     class="btn btn-big btn-primary">禅模式</button>
+      <button id="btnVersus"  class="btn btn-big btn-warn">双人分屏对战</button>
+      <button id="btnNet"     class="btn btn-big btn-warn">网络联机对战</button>
+      <div id="netHint" class="hint hidden">需要启动Node后端服务</div>
+      <div class="menu-row">
+        <button id="btnSettings" class="btn btn-half">设 置</button>
+        <button id="btnHelp"     class="btn btn-half">操作说明</button>
+      </div>
+    </div>
+    <p class="menu-foot">PC：鼠标滑动切割 · 手机：横屏手指滑动切割</p>
+  </div>
+
+  <!-- 弹窗层：同一时间只显示一个 modal（互斥逻辑在 js/ui.js） -->
+  <div id="modalWrap" class="hidden">
+
+    <!-- 设置弹窗：音效静音下拉 + 难度下拉 + 关闭 -->
+    <div id="settingsModal" class="modal hidden">
+      <div class="modal-header">设 置</div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label for="selMute">音效</label>
+          <select id="selMute">
+            <option value="off">开启音效</option>
+            <option value="on">静音</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="selDiff">难度</label>
+          <select id="selDiff">
+            <option value="easy">简单</option>
+            <option value="normal">普通</option>
+            <option value="hard">困难</option>
+          </select>
+        </div>
+        <p class="hint">难度修改在下一局开始时生效</p>
+      </div>
+      <div class="modal-footer">
+        <button id="btnSettingsClose" class="btn btn-primary">关 闭</button>
+      </div>
+    </div>
+
+    <!-- 操作说明弹窗：PC / 手机 / 双人分屏 三段说明 -->
+    <div id="helpModal" class="modal hidden">
+      <div class="modal-header">操作说明</div>
+      <div class="modal-body help-body">
+        <h3>① PC 电脑浏览器</h3>
+        <p>按住<b>鼠标左键滑动</b>切水果，松开出现刀光淡出。<br>
+           单纯点击<b>不会</b>切割，必须有滑动轨迹。<br>
+           切到<b>炸弹</b>会扣生命/扣分，注意躲避！</p>
+        <h3>② 手机触屏操作</h3>
+        <p>请<b>横屏</b>游玩，手指在屏幕上<b>滑动</b>切割水果。<br>
+           支持多点触控，可双指同时滑动。<br>
+           竖屏时游戏会被禁止并弹出旋转提示。</p>
+        <h3>③ 双人分屏对战</h3>
+        <p>画布左右对半分割，双方完全隔离运行（独立水果、独立生命、独立计分）。<br>
+           <b>PC</b>：左半区鼠标<b>左键</b>=玩家1（黄色刀光）；右半区鼠标<b>右键</b>=玩家2（蓝色刀光）。<br>
+           <b>手机</b>：左半屏触摸=玩家1，右半屏触摸=玩家2，双指同时对战。<br>
+           双方同步开局倒计时，90 秒结束后比较分数结算胜负。</p>
+        <h3>④ 增益香蕉（街机模式）</h3>
+        <p><span class="tag tag-double">双倍得分</span> 10 秒内得分翻倍；
+           <span class="tag tag-slow">时间减速</span> 7 秒内全场速度降低 40%；
+           <span class="tag tag-storm">水果风暴</span> 3 秒内大量水果疯狂抛出。</p>
+      </div>
+      <div class="modal-footer">
+        <button id="btnHelpClose" class="btn btn-primary">关 闭</button>
+      </div>
+    </div>
+
+    <!-- 暂停弹窗：继续 / 返回主页 -->
+    <div id="pauseModal" class="modal hidden">
+      <div class="modal-header">游戏暂停</div>
+      <div class="modal-body"><p class="hint">所有物体已冻结，生成器已停止</p></div>
+      <div class="modal-footer">
+        <button id="btnResume" class="btn btn-primary">继续游戏</button>
+        <button id="btnQuit"   class="btn">返回主页</button>
+      </div>
+    </div>
+
+    <!-- 结算弹窗：内容由 js/ui.js 动态生成 -->
+    <div id="overModal" class="modal hidden">
+      <div class="modal-header" id="overTitle">游戏结束</div>
+      <div class="modal-body" id="overBody"></div>
+      <div class="modal-footer">
+        <button id="btnAgain" class="btn btn-primary">重新开始</button>
+        <button id="btnHome"  class="btn">返回主页</button>
+      </div>
+    </div>
+
+    <!-- 网络联机弹窗：创建房间 / 输入4位房间码加入 -->
+    <div id="netModal" class="modal hidden">
+      <div class="modal-header">网络联机对战</div>
+      <div class="modal-body">
+        <div id="netOfflineHint" class="hint hidden">
+          需要启动Node后端服务<br>（参见 README：node server/server.js）
+        </div>
+        <div id="netOnlineArea">
+          <button id="btnCreateRoom" class="btn btn-primary btn-block">创建房间</button>
+          <div id="roomCodeBox" class="hidden">
+            房间码：<span id="roomCodeText">----</span>
+            <span class="hint">（等待对手加入…）</span>
+          </div>
+          <div class="join-row">
+            <input id="inputRoomCode" maxlength="4" inputmode="numeric"
+                   placeholder="输入4位房间码">
+            <button id="btnJoinRoom" class="btn btn-primary">加入房间</button>
+          </div>
+          <div id="netStatus" class="hint"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnNetClose" class="btn">关 闭</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 竖屏禁止游戏提示（仅手机竖屏时显示，层级最高） -->
+  <div id="rotateOverlay" class="screen hidden">
+    <div class="rotate-icon">📱</div>
+    <h2>请旋转设备至横屏</h2>
+    <p>本游戏需要横屏游玩<br>请将手机旋转为横向后继续</p>
+  </div>
+
+</div>
+
+<!-- socket.io 4.x CDN：仅联机模式需要。
+     本地双击打开（file://）或无网络时加载失败也不影响——
+     js/net.js 会检测 typeof io === 'undefined' 并把联机按钮置灰。 -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+
+<!-- 项目模块（合并单文件时按此顺序拼接，见文件头部说明） -->
+<script src="./js/config.js"></script>
+<script src="./js/utils.js"></script>
+<script src="./js/pool.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/assets.js"></script>
+<script src="./js/blade.js"></script>
+<script src="./js/fx.js"></script>
+<script src="./js/entities.js"></script>
+<script src="./js/input.js"></script>
+<script src="./js/game.js"></script>
+<script src="./js/net.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/main.js"></script>
+</body>
+</html>

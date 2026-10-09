@@ -1,0 +1,13 @@
+{
+  "name": "shuiguorenzhe",
+  "version": "1.0.0",
+  "description": "水果忍者 HTML5 Canvas 网页游戏（含 Socket.IO 联机服务端）",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node test/smoke.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.5"
+  }
+}
