@@ -3,6 +3,12 @@
 原生 JavaScript + HTML5 Canvas 实现，**不使用任何前端框架**，仅引入 socket.io 4.x CDN（联机模式用）。
 无图片、无音频素材也能完整运行（全部降级为 Canvas 绘制 / 静音）。
 
+## 🎮 在线试玩
+
+**<https://xiaozhe234.github.io/fruit-ninja-1/>** —— 打开即玩（经典 / 街机 / 禅模式；网络联机对战需自行 `npm start` 起服务端）。
+
+![水果忍者 游戏画面](docs/screenshot.png)
+
 ---
 
 ## 一、运行方式
